@@ -18,7 +18,7 @@ export class HomePage implements OnInit {
     longitude:0
   }
   keys=[]
-  error=""
+  error:any
   temp=[]
   locations = []
   location = { latitude: '', longitude: '' }
@@ -33,13 +33,19 @@ export class HomePage implements OnInit {
 
   }
 
-  getGeoLocation(){
+  async getGeoLocation(){
+    let status = await navigator.permissions.query({ name: 'geolocation' }).then()
+
+    console.log(status.state);
+    if(status.state === 'denied'){
+      this.error = "Please allow the geolocation to use this app"
+    }
+    
     if (navigator.geolocation) {
+      
       navigator.geolocation.getCurrentPosition(async(position) => {
-        
         this.initLocation.longitude = position.coords.longitude;
         this.initLocation.latitude = position.coords.latitude;
-
         this.storage.setObject(this.date.toLocaleTimeString(), this.initLocation)
         this.getLocations()
         if(this.locations) this.isLoading =false
@@ -48,15 +54,16 @@ export class HomePage implements OnInit {
         )
       });
     }else {
-      this.error = "Please allow the geolocation to use this app"
+      this.error = "Something went wrong"
     }
   }
+  
   async getLocations(){   
     await this.setKeys()
     this.isLoading = true
     for (let i of this.keys){
       this.storage.getObject(i).then(value =>{ this.location.latitude=(value.latitude),this.location.longitude=value.longitude})    
-      let obj = { location: this.location, time: i }
+      let obj = { location: this.location, key: i }
       this.locations.push(obj)
       }
       return this.locations
