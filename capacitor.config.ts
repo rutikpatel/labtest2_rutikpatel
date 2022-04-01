@@ -1,7 +1,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'rutik.patel.test',
+  appId: 'io.ionic.starter',
   appName: 'labtest2_rutikpatel',
   webDir: 'www',
   bundledWebRuntime: false
