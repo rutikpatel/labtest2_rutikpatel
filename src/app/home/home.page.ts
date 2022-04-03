@@ -1,6 +1,8 @@
 import { Component,OnInit } from '@angular/core';
 import { StorageService } from '../services/storage.service';
 import { Storage } from '@capacitor/storage';
+import { Geolocation } from '@awesome-cordova-plugins/geolocation/ngx';
+
 
 @Component({
   selector: 'app-home',
@@ -9,7 +11,7 @@ import { Storage } from '@capacitor/storage';
 })
 export class HomePage implements OnInit {
 
-  constructor(private storage:StorageService) {}
+  constructor(private storage: StorageService,private Geolocation:Geolocation) {}
   
   isLoading:Boolean= false
   date:Date =new Date()
@@ -28,62 +30,50 @@ export class HomePage implements OnInit {
     await this.storage.keys().then(
       res => { this.keys = res.keys }
     )
-    // this.getLocations()
     this.getGeoLocation()
+  }
 
+  getLoc(){
+    this.Geolocation.getCurrentPosition().then(async (value) => {
+      return value
+    })
   }
 
   async getGeoLocation(){
-    let status = await navigator.permissions.query({ name: 'geolocation' }).then()
-
-    console.log(status.state);
-    if(status.state === 'denied'){
-      this.error = "Please allow the geolocation to use this app"
-    }
-    
-    if (navigator.geolocation) {
-      
-      navigator.geolocation.getCurrentPosition(async(position) => {
-        this.initLocation.longitude = position.coords.longitude;
-        this.initLocation.latitude = position.coords.latitude;
-        this.storage.setObject(this.date.toLocaleTimeString(), this.initLocation)
-        this.getLocations()
-        if(this.locations) this.isLoading =false
-        await this.storage.keys().then(
-          res => { this.keys = res.keys }
-        )
-      });
-    }else {
-      this.error = "Something went wrong"
-    }
+    this.Geolocation.getCurrentPosition().then(async(value) => {
+      this.initLocation.longitude = value.coords.longitude;
+      this.initLocation.latitude = value.coords.latitude;
+      this.storage.setObject(this.date.toLocaleTimeString(), this.initLocation)
+      this.getLocations()
+      if (this.locations) this.isLoading = false
+      await this.storage.keys().then(
+        res => { this.keys = res.keys }
+      )
+    }).catch((error) =>{ 
+      if(error.code ===1){
+        this.error="Please allow location to use this app"
+      }
+      else{
+        this.error=(error.message)}})
   }
-  
   async getLocations(){   
     await this.setKeys()
     this.isLoading = true
     for (let i of this.keys){
-      this.storage.getObject(i).then(value =>{ this.location.latitude=(value.latitude),this.location.longitude=value.longitude})    
+      await this.storage.getObject(i).then(value =>{ this.location=value})    
       let obj = { location: this.location, key: i }
       this.locations.push(obj)
       }
       return this.locations
     }
-
   async setKeys(){
     await this.storage.keys().then(
       res => {this.keys = res.keys}
     )
   }
-  async removeKey(key:any){
-    console.log(this.locations.length);
-    
+  async removeKey(key:any){    
     this.storage.removeItem(key);
-    this.temp=this.locations.filter(element=>element.time !== key)
+    this.temp=this.locations.filter(element=>element.key !== key)
     this.locations = this.temp
-    
-    // await this.storage.keys().then(
-    //   res => { this.keys = res.keys }
-    // )
-
   }
 }
